@@ -1,0 +1,120 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+struct test {
+	int n;						//变量数
+	int m;						//约束树
+	float best;					//最优值
+	double value[50];			//价值
+	int weight[50][50];			//质量（属性）
+	int limit[50];				//背包上限
+};
+struct test* Point;
+int a;							//几组数据
+int flag;
+double Max_value;				//计算最大价值，数组尽量开大点
+int x[50];
+double max=0;
+FILE* fp;
+
+//求最大值的
+
+void MaxVale(int b,int i,int a[]) {
+		double maxvale = 0;
+		//这个选取方案下放入背包的物品价值总和
+		for (int j = 0; j < Point[b].n; j++) {
+			maxvale += Point[b].value[j] * a[j];
+		}
+		//如果该物品选取方案的物品价值之和 大于 当前最大值
+		if (maxvale > max) {
+			max=maxvale;
+			for (int j = 0; j < Point[b].n; j++)
+				x[j] = a[j];
+		}	
+}
+//约束函数
+int yanzheng(int b,int a[]) {
+	for (int i = 0; i < Point[b].m; i++) {		//每一组属性
+		int max_weight = 0;
+		//这个选取方案下放入背包的物品的质量总和
+		for (int j = 0; j < Point[b].n; j++) {
+			max_weight += Point[b].weight[i][j]*a[j];
+		}
+		//如果该物品选取方案的物品质量之和 大于 背包上限
+		if (max_weight > Point[b].limit[i]) {
+			return 0;							//返回 假
+		}
+	}
+	return 1;  //返回真
+}
+//01背包算法
+int bag(int b) {		//a第几大组数据  b（质量数组weight[b][]的行下标，背包上限limit[b]的下标）
+	int count= 0;
+	int a[50];			//物品的选取状态
+	double n = pow(2, Point[b].n);
+	printf("共有%0.f个物品选取方案\n",n);
+	count = 0;//计数的，有多少个符合条件的
+	//把物品所有的选取情况（即n）都遍历出来
+	for (int i = 0; i < n; i++) {
+		for (int j = Point[b].n - 1, k = i; j >= 0; j--) {
+			a[j] = k & 1; k >>= 1;//赋予数组0或1
+		}
+		if ( yanzheng(b,a) ) {		//如果不超出背包上限，就保存这个符合的路径
+			MaxVale(b,count,a);			//判断是否最大值
+			count++;
+		}
+	}	
+
+	printf("--最优解决方案值为：%0.1f\n", max);//输出最优方案值
+
+	printf("--应该选取第");
+	for (int i = 0; i < Point[b].n; i++) {
+		if (x[i] == 1)						//输出放入背包的物品下标：当标记数组为1时，输出下标
+			printf("%d ", i + 1);
+	}
+	printf("件物品\n");
+
+	return 0;
+}
+
+//读取txt文件内的数据
+int intput() {
+	int j, k;
+	fopen_s(&fp, "测试数据.txt", "r");
+	fscanf_s(fp, "%d", &a);
+	Point = (struct test*)malloc(sizeof(struct test) * a);		 //分配a个内存空间
+	for (int i = 0; i < a; i++) {
+		fscanf_s(fp, "%d", &Point[i].n);					//读取变量数（n）
+		fscanf_s(fp, "%d", &Point[i].m);				//约束数（m）
+		fscanf_s(fp, "%f", &Point[i].best);			//最优解决方案值(best)
+		for (j = 0; j < Point[i].n; j++) {
+			fscanf_s(fp, "%lf", &Point[i].value[j]);//读取物品价值数组
+		}
+		for (j = 0; j < Point[i].m; j++)
+			for (k = 0; k < Point[i].n; k++)
+				fscanf_s(fp, "%d", &Point[i].weight[j][k]);//读取物品质量的二维数组
+		for (j = 0; j < Point[i].m; j++)
+			fscanf_s(fp, "%d", &Point[i].limit[j]);//读取背包上限数组
+	}
+	return 0;
+}
+
+//输出
+void output() {
+	//int i = 0;
+		for (int i = 0; i < a; i++) {
+			max =Max_value=flag = 0;
+			printf("--第%d组测试问题\n",i+1);
+			printf("--%d行%d列\n", Point[i].m, Point[i].n);
+			bag(i);	
+			printf("\n");
+		}
+}
+
+int main()
+{
+	intput();
+	output();
+
+	return 0;
+}
