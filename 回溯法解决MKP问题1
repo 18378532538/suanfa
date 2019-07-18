@@ -1,0 +1,130 @@
+#include<stdio.h>
+#include<stdlib.h>
+//定义结构体
+struct test {
+	int n;						//变量数
+	int m;						//约束树
+	float best;					//最优值
+	double value[50];			//价值
+	int weight[50][50];			//质量
+	int limit[50];				//背包上限
+};
+struct test* Point;				//声明了一个结构体test的对象Point
+int a;							//第几组测试问题
+FILE* fp;						//声明一个文件指针fp
+
+int x[50];						//标记数组1：记录当前物品的选取状态
+int flag[50];					//标记数组2：记录最优方案的物品的选取状态
+double maxValue = 0;			//当前最优物品选取方案下物品的总价值（最优值）
+double NowValue = 0;			//当前放入背包内物品的总价值
+double NowWeight[50];			//当前放入背包内物品的总重量
+
+//布尔型函数，判断当前背包重量加上新物品的质量是否会超出背包上限
+bool tiaojian(int t, int b) {
+	int i;
+	for (i = 0; i < Point[b].m; i++) {								//遍历完1到Point[b].m个的所有属性
+		if (NowWeight[i] + Point[b].weight[i][t] <= Point[b].limit[i])//如果当前总重量+下一个物品重量 <= 背包上限
+			continue;												//继续下一个循环
+		else 
+			break;													//否则跳出循环
+	}
+	if (i == Point[b].m)											//如果能全部遍历完，那就说明该方案没有超出限制
+		return true;												//返回：真
+	else
+		return false;												//否则返回：假			
+}
+
+
+void BackTrack(int t, int b) {  //回溯
+
+	//当t=Point[b].n时，说明深度搜索已经搜索到了最底层，即已经搜索到叶子节点，又或者说遍历到最后一个物品
+	if (t >= Point[b].n) {   
+
+		if (NowValue >= maxValue) {   //如果当前方案的总价值大于上一次的最大价值
+			maxValue = NowValue;    //就将最大价值交换
+
+			for (int i = 0; i < Point[b].n; i++) {    //保存最优选取方案的路径
+				flag[i] = x[i];
+			}
+		}
+		return;
+	}
+	//如果符合tiaojian()函数，则搜索左边节点
+	if (tiaojian(t, b)) {   
+		
+		NowValue += Point[b].value[t];					//当前价值加上下一个物品的价值
+
+		//遍历完1到Point[b].m个的所有属性
+		for (int i = 0; i < Point[b].m; i++) {
+					NowWeight[i] += Point[b].weight[i][t];       //当前重量加上下一个重量
+				}
+
+		x[t] = 1;										//1表示选择该物品，即放入背包标记为1
+
+		BackTrack(t + 1, b);          // 回溯
+		for (int i = 0; i < Point[b].m; i++) {				//不选择则回溯恢复原来的重量
+			NowWeight[i] -= Point[b].weight[i][t];       //当前重量减去上一个的重量
+		}
+		NowValue -= Point[b].value[t];					//回溯恢复原来的价值
+		x[t] = 0;										//0表示不选择该物品，即不放入背包标记为0
+
+	}
+	//不装入这个物品，直接搜索右边的节点
+
+	//直接遍历右子树  
+	BackTrack(t + 1, b);
+
+}
+
+
+//读取txt文件内的数据
+int intput() {
+	int j, k;
+	fopen_s(&fp, "测试数据.txt", "r");
+	fscanf_s(fp, "%d", &a);
+	Point = (struct test*)malloc(sizeof(struct test) * a);		 //分配a个内存空间
+	for (int i = 0; i < a; i++) {
+		fscanf_s(fp, "%d", &Point[i].n);						//读取变量数（n）
+		fscanf_s(fp, "%d", &Point[i].m);						//约束数（m）
+		fscanf_s(fp, "%f", &Point[i].best);						//最优解决方案值(best)
+		for (j = 0; j < Point[i].n; j++) {
+			fscanf_s(fp, "%lf", &Point[i].value[j]);			//读取物品价值数组
+		}
+		for (j = 0; j < Point[i].m; j++)
+			for (k = 0; k < Point[i].n; k++)
+				fscanf_s(fp, "%d", &Point[i].weight[j][k]);		//读取物品质量的二维数组
+		for (j = 0; j < Point[i].m; j++)
+			fscanf_s(fp, "%d", &Point[i].limit[j]);				//读取背包上限数组
+	}
+	return 0;
+}
+
+//输出
+void output() {
+	int i = 1;
+	for (int i = 0; i < a; i++) {
+		printf("--第%d组测试问题\n", i + 1);
+		printf("--%d行%d列\n", Point[i].m, Point[i].n);
+		maxValue = 0;
+		NowValue = 0;
+		for (int i = 0; i < Point[i].m; i++) {
+			NowWeight[i] = 0;
+		}
+		BackTrack(0, i);
+		printf("最大值为：%0.1f\n", maxValue);
+		printf("最优解决方案为：\n选取第");
+		for (int j = 0; j < Point[i].n; j++) {
+			if (flag[j] == 1)
+				printf("%d ", j + 1);
+		}
+		printf("件物品\n\n");
+	}
+}
+
+int main()
+{
+	intput();
+	output();
+
+	return 0;
+}
